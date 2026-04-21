@@ -1,0 +1,249 @@
+<!DOCTYPE html><html>
+<head>
+<meta charset="UTF-8">
+<title>OMNISCIENT AI FINAL</title><style>
+body{background:#020617;color:white;text-align:center;font-family:Arial;padding:20px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px}
+button{padding:12px;background:#1e293b;color:white;border:none;border-radius:8px}
+.active{background:#22c55e !important}
+</style></head><body><h1>OMNISCIENT AI 💀🔥</h1><div class="grid">
+<button id="corn" onclick="add('corn')">🌽</button>
+<button id="tomato" onclick="add('tomato')">🍅</button>
+<button id="carrot" onclick="add('carrot')">🥕</button>
+<button id="pepper" onclick="add('pepper')">🌶️</button>
+<button id="fish" onclick="add('fish')">🐟</button>
+<button id="shrimp" onclick="add('shrimp')">🦐</button>
+<button id="cow" onclick="add('cow')">🐄</button>
+<button id="chicken" onclick="add('chicken')">🐔</button>
+</div><button onclick="toggleBot()">BOT</button>
+<button onclick="reset()">Reset</button>
+<button onclick="clearMemory()">Clear Memory</button>
+
+<div>Mode: <span id="mode"></span></div>
+<div>Trend: <span id="trend"></span></div>
+<div>Top5: <span id="top5"></span></div>
+<div>Top6: <span id="top6"></span></div>
+<div>Confidence: <span id="confidence"></span></div>
+<div>Accuracy: <span id="accuracy"></span></div><script>
+
+const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
+const veg=["corn","tomato","carrot","pepper"]
+const meat=["fish","shrimp","cow","chicken"]
+
+let history=[]
+let weights={}
+let memory={}
+let bot=false
+
+let total=0
+let correct=0
+
+foods.forEach(f=>weights[f]=1)
+
+/* STORAGE */
+
+function save(){
+localStorage.setItem("OMNI",JSON.stringify({history,weights,memory,total,correct}))
+}
+
+function load(){
+let d=localStorage.getItem("OMNI")
+if(d){
+let x=JSON.parse(d)
+history=x.history||[]
+weights=x.weights||weights
+memory=x.memory||{}
+total=x.total||0
+correct=x.correct||0
+}
+}
+
+function clearMemory(){
+localStorage.removeItem("OMNI")
+alert("Cleared")
+}
+
+/* ADD */
+
+function add(f){
+
+if(window.last){
+total++
+if(window.last.includes(f)){
+correct++
+weights[f]+=0.5
+}else{
+window.last.forEach(p=>weights[p]-=0.07)
+}
+}
+
+history.push(f)
+
+let seq=history.slice(-3).join("-")
+memory[seq]=(memory[seq]||0)+1
+
+update()
+save()
+}
+
+/* TREND */
+
+function trend(){
+let last10=history.slice(-10)
+let v=last10.filter(x=>veg.includes(x)).length
+let m=last10.filter(x=>meat.includes(x)).length
+
+if(v>m+2)return "VEG"
+if(m>v+2)return "MEAT"
+return "MIX"
+}
+
+/* DETECTORS */
+
+function trap(){
+let l=history.slice(-4)
+return l.length===4 && l.every(x=>x===l[0])
+}
+
+function fake(){
+let l=history.slice(-6)
+return new Set(l).size<=2
+}
+
+function drift(){
+let a=history.slice(-10)
+let b=history.slice(-20)
+return Math.abs(
+a.filter(x=>veg.includes(x)).length -
+b.filter(x=>veg.includes(x)).length
+)>4
+}
+
+/* SCORE */
+
+function score(f){
+
+let s=0
+
+// recent
+let recent=history.slice(-30)
+s+=recent.filter(x=>x==f).length*2
+
+// absence
+let last=history.lastIndexOf(f)
+let gap=last==-1?50:history.length-last
+s+=gap*0.6
+
+// weight learning
+s+=weights[f]
+
+// pattern
+let last3=history.slice(-3).join("-")
+if(memory[last3]) s+=memory[last3]
+
+// anti repeat
+let last5=history.slice(-5)
+if(last5.filter(x=>x==f).length>=3) s-=6
+
+// trap escape
+if(trap() && history[history.length-1]!=f) s+=6
+
+// fake reduce
+if(fake()) s*=0.6
+
+// drift reduce
+if(drift()) s*=0.7
+
+// tiny random
+s+=Math.random()*0.02
+
+return s
+}
+
+/* AI */
+
+function ai(){
+
+let s={}
+foods.forEach(f=>s[f]=score(f))
+
+let totalScore=Object.values(s).reduce((a,b)=>a+b,0)
+
+let prob={}
+foods.forEach(f=>prob[f]=(s[f]/totalScore)*100)
+
+return prob
+}
+
+/* BALANCE */
+
+function balance(sorted){
+
+let v=sorted.filter(x=>veg.includes(x[0]))
+let m=sorted.filter(x=>meat.includes(x[0]))
+
+let t=trend()
+
+let vC=3,mC=2
+
+if(t==="VEG"){vC=2;mC=3}
+
+return {
+top5:[...v.slice(0,vC),...m.slice(0,mC)].map(x=>x[0]),
+top6:[...v.slice(0,3),...m.slice(0,3)].map(x=>x[0])
+}
+}
+
+/* MODE */
+
+function mode(conf){
+
+if(fake()) return "SKIP ❌"
+if(trap()) return "ESCAPE ⚠️"
+if(drift()) return "WAIT ⏳"
+
+if(conf>25) return "PLAY 🔥"
+if(conf>12) return "RISK ⚠️"
+
+return "SKIP ❌"
+}
+
+/* UPDATE */
+
+function update(){
+
+let p=ai()
+let sorted=Object.entries(p).sort((a,b)=>b[1]-a[1])
+
+let b=balance(sorted)
+
+window.last=b.top5
+
+document.getElementById("top5").innerHTML=b.top5.join(" ")
+document.getElementById("top6").innerHTML=b.top6.join(" ")
+
+let conf=sorted[0][1]-sorted[1][1]
+
+document.getElementById("confidence").innerHTML=conf.toFixed(1)+"%"
+document.getElementById("mode").innerHTML=mode(conf)
+document.getElementById("trend").innerHTML=trend()
+
+let acc=total?((correct/total)*100).toFixed(1):0
+document.getElementById("accuracy").innerHTML=acc+"%"
+
+foods.forEach(f=>document.getElementById(f).classList.remove("active"))
+
+if(bot){
+b.top5.forEach(f=>document.getElementById(f).classList.add("active"))
+}
+
+}
+
+function toggleBot(){bot=!bot}
+function reset(){history=[];update();save()}
+
+load()
+update()
+
+</script></body>
+</html>
