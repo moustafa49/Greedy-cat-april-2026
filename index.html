@@ -1,11 +1,65 @@
 <!DOCTYPE html><html>
 <head>
 <meta charset="UTF-8">
-<title>OMNISCIENT AI — FINAL PRO</title><style>
-body{background:#020617;color:white;text-align:center;font-family:Arial;padding:20px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px}
-button{padding:12px;background:#1e293b;color:white;border:none;border-radius:8px}
-.active{background:#22c55e !important}
+<title>OMNISCIENT AI — PRO UI</title><style>
+
+body{
+background:#020617;
+color:white;
+text-align:center;
+font-family:Arial;
+padding:15px
+}
+
+h1{
+font-size:28px;
+margin-bottom:20px;
+color:#22c55e
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:12px;
+margin-bottom:20px
+}
+
+button{
+padding:18px;
+font-size:28px;
+background:#1e293b;
+color:white;
+border:none;
+border-radius:12px;
+font-weight:bold
+}
+
+button:active{
+transform:scale(0.95)
+}
+
+.controls{
+display:flex;
+gap:10px;
+justify-content:center;
+flex-wrap:wrap;
+margin-bottom:15px
+}
+
+.info{
+font-size:18px;
+margin:6px 0
+}
+
+.big{
+font-size:22px;
+font-weight:bold
+}
+
+.active{
+background:#22c55e !important
+}
+
 </style></head><body><h1>OMNISCIENT AI 💀🔥</h1><div class="grid">
 <button id="🌽" onclick="add('🌽')">🌽</button>
 <button id="🍅" onclick="add('🍅')">🍅</button>
@@ -15,18 +69,19 @@ button{padding:12px;background:#1e293b;color:white;border:none;border-radius:8px
 <button id="🦐" onclick="add('🦐')">🦐</button>
 <button id="🐄" onclick="add('🐄')">🐄</button>
 <button id="🐔" onclick="add('🐔')">🐔</button>
-</div><button id="botBtn" onclick="toggleBot()">BOT: OFF</button>
+</div><div class="controls">
+<button id="botBtn" onclick="toggleBot()">BOT: OFF</button>
 <button onclick="toggleAuto()">AUTO: OFF</button>
+<button onclick="undo()">Undo</button>
 <button onclick="reset()">Reset</button>
-<button onclick="clearMemory()">Clear Memory</button>
-
-<div><b>Mode:</b> <span id="mode"></span></div>
-<div><b>Trend:</b> <span id="trend"></span></div>
-<div><b>Top5:</b> <span id="top5"></span></div>
-<div><b>Top6:</b> <span id="top6"></span></div>
-<div><b>Absence:</b> <span id="absence"></span></div>
-<div><b>Confidence:</b> <span id="confidence"></span></div>
-<div><b>Accuracy:</b> <span id="accuracy"></span></div><script>
+<button onclick="clearMemory()">Clear</button>
+</div><div class="info big">Mode: <span id="mode"></span></div>
+<div class="info">Trend: <span id="trend"></span></div>
+<div class="info big">Top5: <span id="top5"></span></div>
+<div class="info">Top6: <span id="top6"></span></div>
+<div class="info">Absence: <span id="absence"></span></div>
+<div class="info big">Confidence: <span id="confidence"></span></div>
+<div class="info">Accuracy: <span id="accuracy"></span></div><script>
 
 const foods=["🌽","🍅","🥕","🌶️","🐟","🦐","🐄","🐔"]
 const veg=["🌽","🍅","🥕","🌶️"]
@@ -47,11 +102,11 @@ foods.forEach(f=>weights[f]=1)
 /* STORAGE */
 
 function save(){
-localStorage.setItem("OMNI_PRO",JSON.stringify({history,weights,memory,total,correct}))
+localStorage.setItem("OMNI_UI",JSON.stringify({history,weights,memory,total,correct}))
 }
 
 function load(){
-let d=localStorage.getItem("OMNI_PRO")
+let d=localStorage.getItem("OMNI_UI")
 if(d){
 let x=JSON.parse(d)
 history=x.history||[]
@@ -63,7 +118,7 @@ correct=x.correct||0
 }
 
 function clearMemory(){
-localStorage.removeItem("OMNI_PRO")
+localStorage.removeItem("OMNI_UI")
 alert("Memory Cleared")
 }
 
@@ -90,12 +145,19 @@ update()
 save()
 }
 
+/* UNDO */
+
+function undo(){
+history.pop()
+update()
+save()
+}
+
 /* ABSENCE */
 
 function getAbsence(f){
 
 let lastIndex=history.lastIndexOf(f)
-
 let gap = lastIndex===-1 ? history.length : history.length - lastIndex
 
 let last20=history.slice(-20)
@@ -144,32 +206,23 @@ function score(f){
 
 let s=0
 
-// recent
 let recent=history.slice(-30)
 s+=recent.filter(x=>x==f).length*2
 
-// absence
 let abs=getAbsence(f)
 s+=abs.gap*0.6
 
-// weight learning
 s+=weights[f]
 
-// pattern
 let last3=history.slice(-3).join("-")
 if(memory[last3]) s+=memory[last3]
 
-// anti repeat
 let last5=history.slice(-5)
 if(last5.filter(x=>x==f).length>=3) s-=6
 
-// trap escape
 if(trap() && history[history.length-1]!=f) s+=6
 
-// fake reduce
 if(fake()) s*=0.6
-
-// drift reduce
 if(drift()) s*=0.7
 
 s+=Math.random()*0.02
@@ -298,7 +351,6 @@ document.getElementById("confidence").innerHTML=conf.toFixed(1)+"%"
 document.getElementById("mode").innerHTML=mode(conf)
 document.getElementById("trend").innerHTML=trend()
 
-// ABSENCE UI
 document.getElementById("absence").innerHTML=
 foods.map(f=>{
 let a=getAbsence(f)
@@ -308,10 +360,12 @@ return f+"("+a.gap+"|"+a.miss+")"
 let acc=total?((correct/total)*100).toFixed(1):0
 document.getElementById("accuracy").innerHTML=acc+"%"
 
-// BOT Highlight
+/* BOT Highlight */
+
 foods.forEach(f=>{
-document.getElementById(f).classList.remove("active")
-document.getElementById(f).style.background="#1e293b"
+let el=document.getElementById(f)
+el.style.background="#1e293b"
+el.style.transform="scale(1)"
 })
 
 if(bot){
@@ -320,9 +374,12 @@ let el=document.getElementById(f)
 
 if(i===0){
 el.style.background="#16a34a"
-}else if(i<=2){
+el.style.transform="scale(1.15)"
+}
+else if(i<=2){
 el.style.background="#22c55e"
-}else{
+}
+else{
 el.style.background="#4ade80"
 }
 
