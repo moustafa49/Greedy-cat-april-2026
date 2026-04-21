@@ -1,343 +1,193 @@
 <!DOCTYPE html><html>
 <head>
 <meta charset="UTF-8">
-<title>OMNISCIENT AI — PRO UPGRADE</title><style>
+<title>OMNISCIENT AI — ULTIMATE</title><style>
+body{background:#020617;color:white;font-family:Arial;text-align:center;padding:15px}
+h1{color:#22c55e;font-size:28px;margin-bottom:15px}
 
-body{
-background:#020617;
-color:white;
-font-family:Arial;
-text-align:center;
-padding:15px
-}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+button{padding:16px;font-size:26px;background:#1e293b;color:white;border:none;border-radius:10px}
 
-h1{
-color:#22c55e;
-font-size:28px;
-margin-bottom:20px
-}
+.controls{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 
-/* GRID */
-.grid{
-display:grid;
-grid-template-columns:repeat(4,1fr);
-gap:12px;
-margin-bottom:20px
-}
+.section{background:#0f172a;margin-top:15px;padding:10px;border-radius:12px}
 
-button{
-padding:18px;
-font-size:28px;
-background:#1e293b;
-color:white;
-border:none;
-border-radius:12px
-}
+.history span{background:#1e293b;padding:5px 8px;margin:2px;border-radius:6px}
 
-button:active{
-transform:scale(0.95)
-}
-
-/* CONTROLS */
-.controls{
-display:flex;
-flex-wrap:wrap;
-gap:10px;
-justify-content:center;
-margin-bottom:15px
-}
-
-/* SECTION */
-.section{
-margin-top:20px
-}
-
-.history{
-display:flex;
-flex-wrap:wrap;
-gap:6px;
-justify-content:center;
-margin-top:10px
-}
-
-.history span{
-font-size:20px;
-background:#1e293b;
-padding:6px 10px;
-border-radius:8px
-}
-
-.big{
-font-size:22px;
-font-weight:bold
-}
-
-</style></head><body><h1>OMNISCIENT AI 💀🔥</h1><!-- GRID --><div class="grid">
-<button id="🌽" onclick="add('🌽')">🌽</button>
-<button id="🍅" onclick="add('🍅')">🍅</button>
-<button id="🥕" onclick="add('🥕')">🥕</button>
-<button id="🌶️" onclick="add('🌶️')">🌶️</button>
-<button id="🐟" onclick="add('🐟')">🐟</button>
-<button id="🦐" onclick="add('🦐')">🦐</button>
-<button id="🐄" onclick="add('🐄')">🐄</button>
-<button id="🐔" onclick="add('🐔')">🐔</button>
-</div><!-- CONTROLS --><div class="controls">
-<button id="botBtn" onclick="toggleBot()">BOT: OFF</button>
-<button id="autoBtn" onclick="toggleAuto()">AUTO: OFF</button>
+.heat span{padding:4px 6px;margin:2px;border-radius:6px;display:inline-block}
+</style></head><body><h1>OMNISCIENT AI 💀🔥</h1><div class="grid">
+<button onclick="add('🌽')">🌽</button>
+<button onclick="add('🍅')">🍅</button>
+<button onclick="add('🥕')">🥕</button>
+<button onclick="add('🌶️')">🌶️</button>
+<button onclick="add('🐟')">🐟</button>
+<button onclick="add('🦐')">🦐</button>
+<button onclick="add('🐄')">🐄</button>
+<button onclick="add('🐔')">🐔</button>
+</div><div class="controls">
+<button onclick="toggleBot()">BOT</button>
+<button onclick="toggleAuto()">AUTO</button>
 <button onclick="undo()">Undo</button>
 <button onclick="reset()">Reset</button>
-<button onclick="clearMemory()">Clear</button>
-</div><!-- HISTORY --><div class="section">
-<b>History (Last 20)</b>
-<div id="historyBar" class="history"></div>
-</div><!-- ANALYSIS --><div class="section">
-<b>AI Analysis</b>
-<div>Mode: <span id="mode"></span></div>
-<div>Trend: <span id="trend"></span></div>
-<div>Absence: <span id="absence"></span></div>
-</div><!-- PREDICTION --><div class="section">
-<b>Prediction</b>
-<div class="big">Top5: <span id="top5"></span></div>
-<div>Top6: <span id="top6"></span></div>
-<div class="big">Confidence: <span id="confidence"></span></div>
-<div>Accuracy: <span id="accuracy"></span></div>
-</div><script>
+</div><div class="section"><b>History</b><div id="history"></div></div><div class="section"><b>Heatmap</b><div id="heat"></div></div><div class="section"><b>AI Analysis</b><div id="analysis"></div></div><div class="section"><b>Prediction</b><div id="prediction"></div></div><script>
 
 const foods=["🌽","🍅","🥕","🌶️","🐟","🦐","🐄","🐔"]
 const veg=["🌽","🍅","🥕","🌶️"]
 const meat=["🐟","🦐","🐄","🐔"]
 
 let history=[]
-let weights={}
 let memory={}
-
+let memory2={}
 let bot=false
 let auto=false
-let autoInterval=null
-
-let total=0
-let correct=0
-
-foods.forEach(f=>weights[f]=1)
 
 /* STORAGE */
 function save(){
-localStorage.setItem("OMNI_V2",JSON.stringify({history,weights,memory,total,correct}))
+localStorage.setItem("ULTIMATE_AI",JSON.stringify({history,memory,memory2}))
 }
 
 function load(){
-let d=localStorage.getItem("OMNI_V2")
+let d=localStorage.getItem("ULTIMATE_AI")
 if(d){
 let x=JSON.parse(d)
 history=x.history||[]
-weights=x.weights||weights
 memory=x.memory||{}
-total=x.total||0
-correct=x.correct||0
+memory2=x.memory2||{}
 }
-}
-
-function clearMemory(){
-localStorage.removeItem("OMNI_V2")
-alert("Memory Cleared")
 }
 
 /* ADD */
 function add(f){
-
-if(window.last){
-total++
-if(window.last.includes(f)){
-correct++
-weights[f]+=0.4
-}else{
-window.last.forEach(p=>weights[p]-=0.05)
-}
-}
-
 history.push(f)
 
-let seq=history.slice(-3).join("-")
-memory[seq]=(memory[seq]||0)+1
+let k3=history.slice(-3).join("-")
+memory[k3]=(memory[k3]||0)+1
+
+let k2=history.slice(-2).join("-")
+memory2[k2]=(memory2[k2]||0)+1
 
 update()
 save()
 }
 
-/* UNDO */
-function undo(){
-history.pop()
-update()
-save()
-}
+function undo(){history.pop();update();save()}
+function reset(){history=[];update();save()}
 
 /* ABSENCE */
-function getAbsence(f){
+function absence(f){
 let last=history.lastIndexOf(f)
-let gap = last==-1 ? history.length : history.length-last
-let last20=history.slice(-20)
-let miss=last20.filter(x=>x!==f).length
+let gap= last==-1?history.length:history.length-last
+let miss=history.slice(-20).filter(x=>x!==f).length
 return {gap,miss}
 }
 
-/* TREND */
-function trend(){
+/* HEAT */
+function heat(){
+return foods.map(f=>{
+let c=history.slice(-20).filter(x=>x==f).length
+let color=c>5?"#16a34a":c>3?"#22c55e":"#1e293b"
+return "<span style='background:"+color+"'>"+f+" "+c+"</span>"
+}).join("")
+}
+
+/* SUPER AI */
+function brain(){
+
+let s={}
+
+foods.forEach(f=>{
+
+let score=0
+
+/* freq */
+score+=history.slice(-30).filter(x=>x==f).length*2
+
+/* absence */
+let a=absence(f)
+score+=a.gap*0.7
+
+/* memory */
+let k3=history.slice(-3).join("-")
+if(memory[k3]) score+=memory[k3]*2
+
+let k2=history.slice(-2).join("-")
+if(memory2[k2]) score+=memory2[k2]*1.5
+
+/* anti trap */
+if(history.slice(-5).filter(x=>x==f).length>=3) score-=8
+
+/* trend */
 let last10=history.slice(-10)
 let v=last10.filter(x=>veg.includes(x)).length
 let m=last10.filter(x=>meat.includes(x)).length
-if(v>m+2)return "VEG 🌽"
-if(m>v+2)return "MEAT 🐟"
-return "MIX ⚖️"
-}
 
-/* SCORE */
-function score(f){
+if(v>7 && meat.includes(f)) score+=3
+if(m>7 && veg.includes(f)) score+=3
 
-let s=0
+/* fake */
+let unique=new Set(history.slice(-6)).size
+if(unique<=2) score*=0.5
 
-let recent=history.slice(-25)
-s+=recent.filter(x=>x==f).length*2
+/* noise */
+score+=Math.random()*0.01
 
-let abs=getAbsence(f)
-s+=abs.gap*0.5
+s[f]=score
 
-s+=weights[f]
-
-let seq=history.slice(-3).join("-")
-if(memory[seq]) s+=memory[seq]
-
-if(history.slice(-5).filter(x=>x==f).length>=3) s-=5
-
-s+=Math.random()*0.01
+})
 
 return s
 }
 
-/* AI */
-function ai(){
-let s={}
-foods.forEach(f=>s[f]=score(f))
-let totalScore=Object.values(s).reduce((a,b)=>a+b,0)
-let prob={}
-foods.forEach(f=>prob[f]=(s[f]/totalScore)*100)
-return prob
-}
+/* DECISION */
+function decide(s){
 
-/* BALANCE */
-function balance(sorted){
+let sorted=Object.entries(s).sort((a,b)=>b[1]-a[1])
+
+let top=sorted[0][1]
+let second=sorted[1][1]
+let conf=((top-second)/top)*100
+
+let mode="WAIT ❌"
+if(conf>30) mode="ATTACK 🔥"
+else if(conf>15) mode="PLAY ⚠️"
 
 let v=sorted.filter(x=>veg.includes(x[0]))
 let m=sorted.filter(x=>meat.includes(x[0]))
 
-let t=trend()
+let top5=[...v.slice(0,3),...m.slice(0,2)].map(x=>x[0])
+let top6=[...v.slice(0,3),...m.slice(0,3)].map(x=>x[0])
 
-let vC=3,mC=2
-if(t.includes("VEG")){vC=2;mC=3}
-
-return {
-top5:[...v.slice(0,vC),...m.slice(0,mC)].map(x=>x[0]),
-top6:[...v.slice(0,3),...m.slice(0,3)].map(x=>x[0])
-}
-}
-
-/* MODE */
-function mode(conf){
-if(conf>25)return "PLAY 🔥"
-if(conf>12)return "RISK ⚠️"
-return "SKIP ❌"
-}
-
-/* BOT */
-function toggleBot(){
-bot=!bot
-let btn=document.getElementById("botBtn")
-btn.innerText=bot?"BOT: ON 🤖":"BOT: OFF"
-btn.style.background=bot?"#22c55e":"#1e293b"
-}
-
-/* AUTO */
-function toggleAuto(){
-
-auto=!auto
-let btn=document.getElementById("autoBtn")
-
-if(auto){
-btn.innerText="AUTO: ON ⚡"
-btn.style.background="#22c55e"
-
-autoInterval=setInterval(()=>{
-if(window.last){
-add(window.last[0])
-}
-},2000)
-
-}else{
-btn.innerText="AUTO: OFF"
-btn.style.background="#1e293b"
-clearInterval(autoInterval)
-}
-
+return {top5,top6,conf,mode}
 }
 
 /* UPDATE */
 function update(){
 
-/* HISTORY */
-document.getElementById("historyBar").innerHTML=
+document.getElementById("history").innerHTML=
 history.slice(-20).map(x=>"<span>"+x+"</span>").join("")
 
-let p=ai()
-let sorted=Object.entries(p).sort((a,b)=>b[1]-a[1])
+document.getElementById("heat").innerHTML=heat()
 
-let b=balance(sorted)
-window.last=b.top5
+let s=brain()
+let d=decide(s)
 
-document.getElementById("top5").innerHTML=b.top5.join(" ")
-document.getElementById("top6").innerHTML=b.top6.join(" ")
+window.last=d.top5
 
-let conf=sorted[0][1]-sorted[1][1]
+document.getElementById("prediction").innerHTML=
+"Top5: "+d.top5.join(" ")+"<br>Top6: "+d.top6.join(" ")
 
-document.getElementById("confidence").innerHTML=conf.toFixed(1)+"%"
-document.getElementById("mode").innerHTML=mode(conf)
-document.getElementById("trend").innerHTML=trend()
+document.getElementById("analysis").innerHTML=
+"Mode: "+d.mode+"<br>Confidence: "+d.conf.toFixed(1)+"%"
 
-document.getElementById("absence").innerHTML=
-foods.map(f=>{
-let a=getAbsence(f)
-return f+"("+a.gap+"|"+a.miss+")"
-}).join(" | ")
-
-let acc=total?((correct/total)*100).toFixed(1):0
-document.getElementById("accuracy").innerHTML=acc+"%"
-
-/* HIGHLIGHT */
-foods.forEach(f=>{
-let el=document.getElementById(f)
-el.style.background="#1e293b"
-el.style.transform="scale(1)"
-})
-
-if(bot){
-b.top5.forEach((f,i)=>{
-let el=document.getElementById(f)
-
-if(i===0){
-el.style.background="#16a34a"
-el.style.transform="scale(1.15)"
-}
-else if(i<=2){
-el.style.background="#22c55e"
-}
-else{
-el.style.background="#4ade80"
-}
-
-})
+/* BOT */
+if(bot && d.conf>15){
+add(d.top5[0])
 }
 
 }
 
-function reset(){history=[];update();save()}
+function toggleBot(){bot=!bot}
+function toggleAuto(){auto=!auto}
 
 load()
 update()
