@@ -1,40 +1,55 @@
 <!DOCTYPE html><html>
 <head>
 <meta charset="UTF-8">
-<title>Greedy Cat MAX — QUANTUM SINGULARITY AI</title><style>
+<title>Greedy Cat MAX — ULTRA+</title><style>
 body{font-family:Arial;background:#020617;color:white;text-align:center;padding:15px}
 h1{color:#22c55e}
 
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-button{padding:14px;font-size:24px;background:#1e293b;color:white;border:none;border-radius:10px}
-button:hover{background:#334155}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
 
-.panel{background:#0f172a;margin-top:12px;padding:10px;border-radius:10px}
+button{
+padding:16px;
+font-size:26px;
+background:#1e293b;
+color:white;
+border:none;
+border-radius:12px;
+transition:0.2s;
+}
+
+.best{background:#22c55e !important; box-shadow:0 0 20px #22c55e}
+.good{background:#16a34a !important}
+
+.panel{
+background:#0f172a;
+margin-top:10px;
+padding:10px;
+border-radius:10px;
+}
+
 .big{font-size:22px}
-.small{font-size:14px;color:#94a3b8}
-</style></head><body><h1>💀 QUANTUM SINGULARITY AI</h1><div class="grid">
-<button onclick="add('corn')">🌽</button>
-<button onclick="add('tomato')">🍅</button>
-<button onclick="add('carrot')">🥕</button>
-<button onclick="add('pepper')">🌶️</button>
-<button onclick="add('fish')">🐟</button>
-<button onclick="add('shrimp')">🦐</button>
-<button onclick="add('cow')">🐄</button>
-<button onclick="add('chicken')">🐔</button>
-</div><br><button onclick="undo()">Undo</button>
+</style></head><body><h1>💀 GREEDY CAT ULTRA+</h1><div class="grid">
+<button id="btn-corn" onclick="add('corn')">🌽</button>
+<button id="btn-tomato" onclick="add('tomato')">🍅</button>
+<button id="btn-carrot" onclick="add('carrot')">🥕</button>
+<button id="btn-pepper" onclick="add('pepper')">🌶️</button>
+<button id="btn-fish" onclick="add('fish')">🐟</button>
+<button id="btn-shrimp" onclick="add('shrimp')">🦐</button>
+<button id="btn-cow" onclick="add('cow')">🐄</button>
+<button id="btn-chicken" onclick="add('chicken')">🐔</button>
+</div><button onclick="undo()">Undo</button>
 <button onclick="reset()">Reset</button>
 
 <button onclick="mode='safe'">🛡️ SAFE</button>
 <button onclick="mode='attack'">🔥 ATTACK</button>
 
-<button onclick="bot=true">🤖 BOT ON</button>
-<button onclick="bot=false">⛔ BOT OFF</button>
-
 <div class="panel"><b>History</b><div id="history"></div></div>
 <div class="panel"><b>Absence</b><div id="absence"></div></div>
-<div class="panel"><b>Wave / Trap / Drift</b><div id="state"></div></div><div class="panel big"><b>AI Decision</b><div id="decision"></div></div><div class="panel"><b>Top5</b><div id="top5"></div></div>
+<div class="panel"><b>Behavior</b><div id="behavior"></div></div>
+<div class="panel"><b>Risk</b><div id="risk"></div></div><div class="panel big"><b>Decision</b><div id="decision"></div></div>
+<div class="panel"><b>Opportunity</b><div id="opportunity"></div></div><div class="panel"><b>Top5</b><div id="top5"></div></div>
 <div class="panel"><b>Top6</b><div id="top6"></div></div><div class="panel"><b>Probability</b><div id="prob"></div></div>
-<div class="panel"><b>Monte Carlo</b><div id="monte"></div></div><div class="panel"><b>Explain AI</b><div id="explain"></div></div>
+<div class="panel"><b>Monte Carlo</b><div id="monte"></div></div><div class="panel"><b>Explain</b><div id="explain"></div></div>
 <div class="panel"><b>Confidence</b><div id="confidence"></div></div><script>
 
 const foods=["corn","tomato","carrot","pepper","fish","shrimp","cow","chicken"]
@@ -47,16 +62,14 @@ fish:"🐟",shrimp:"🦐",cow:"🐄",chicken:"🐔"
 }
 
 let history=JSON.parse(localStorage.getItem("hist")||"[]")
-let weights={}
-foods.forEach(f=>weights[f]=1)
-
 let transition={}
 let mode="safe"
-let bot=false
 
-function save(){
-localStorage.setItem("hist",JSON.stringify(history))
-}
+let stableDecision=null
+let decisionTimer=0
+let lastConfidence=0
+
+function save(){localStorage.setItem("hist",JSON.stringify(history))}
 
 function add(f){
 if(history.length){
@@ -76,8 +89,7 @@ function reset(){history=[];save();update()}
 
 function absence(f){
 let i=history.lastIndexOf(f)
-if(i==-1)return history.length
-return history.length-i-1
+return i==-1?history.length:history.length-i-1
 }
 
 function momentum(f){
@@ -88,9 +100,9 @@ function wave(){
 let last=history.slice(-10)
 let v=last.filter(x=>veg.includes(x)).length
 let m=last.filter(x=>meat.includes(x)).length
-if(v>m)return "Vegetable"
-if(m>v)return "Meat"
-return "Mixed"
+if(v>m)return "VEG"
+if(m>v)return "MEAT"
+return "MIX"
 }
 
 function trap(){
@@ -100,31 +112,43 @@ return last.length>=4 && last.every(x=>x==last[0])
 
 function drift(){
 let last=history.slice(-6)
-let types=last.map(x=>veg.includes(x)?"v":"m")
-return new Set(types).size>1
+return new Set(last.map(x=>veg.includes(x))).size>1
 }
 
-/* ===== AI SCORE ===== */
+/* ===== RISK 2.0 ===== */
+
+function risk(){
+
+if(trap()) return "DANGER"
+
+let d=new Set(history.slice(-10)).size
+let confLow = lastConfidence<15
+
+if(d<3 || confLow) return "DANGER"
+if(d<5) return "MEDIUM"
+
+return "SAFE"
+}
+
+/* ===== SCORE ===== */
 
 function score(f){
 
 let s=0
 
-s+=absence(f)*0.6
-s+=momentum(f)*1.2
+s+=absence(f)*0.7
+s+=momentum(f)*1.5
 
 let last=history[history.length-1]
 if(transition[last] && transition[last][f])
-s+=transition[last][f]*0.7
+s+=transition[last][f]
 
-if(wave()=="Vegetable" && meat.includes(f)) s+=2
-if(wave()=="Meat" && veg.includes(f)) s+=2
+if(wave()=="VEG" && meat.includes(f)) s+=2
+if(wave()=="MEAT" && veg.includes(f)) s+=2
 
-if(trap() && f!=history[history.length-1]) s+=2
+if(trap() && f!=history[history.length-1]) s+=3
 
 if(mode=="attack") s*=1.3
-
-s+=Math.random()*0.3
 
 return s
 }
@@ -132,10 +156,12 @@ return s
 /* ===== MONTE ===== */
 
 function monteCarlo(){
+
 let sim={}
 foods.forEach(f=>sim[f]=0)
 
-for(let i=0;i<12000;i++){
+for(let i=0;i<8000;i++){
+
 let scores={}
 foods.forEach(f=>scores[f]=score(f))
 
@@ -147,10 +173,87 @@ for(let f of foods){
 c+=scores[f]
 if(r<=c){sim[f]++;break}
 }
+
 }
 
-foods.forEach(f=>sim[f]=(sim[f]/12000*100).toFixed(1))
+foods.forEach(f=>sim[f]=(sim[f]/8000*100).toFixed(1))
 return sim
+}
+
+/* ===== DECISION STABILITY ===== */
+
+function smartDecision(conf, r){
+
+let newDecision
+
+if(trap()) newDecision="SKIP"
+else if(r=="DANGER") newDecision="SKIP"
+else if(conf>30 && r=="SAFE") newDecision="STRONG"
+else if(conf>15) newDecision="WAIT"
+else newDecision="WAIT"
+
+if(newDecision!==stableDecision){
+decisionTimer++
+if(decisionTimer>=2){
+stableDecision=newDecision
+decisionTimer=0
+}
+}else{
+decisionTimer=0
+}
+
+return stableDecision || newDecision
+}
+
+/* ===== OPPORTUNITY ===== */
+
+function opportunity(conf, r){
+
+if(conf>35 && r=="SAFE" && !trap())
+return "💰 فرصة قوية جدًا"
+
+if(conf>25)
+return "⚡ فرصة متوسطة"
+
+return "—"
+}
+
+/* ===== EXPLAIN PRO ===== */
+
+function explain(best, r){
+
+let reasons=[]
+
+if(absence(best)>6) reasons.push("غياب عالي")
+if(momentum(best)>2) reasons.push("نشط")
+if(wave()=="VEG") reasons.push("موجة خضار")
+if(wave()=="MEAT") reasons.push("موجة لحوم")
+if(!trap()) reasons.push("آمن")
+if(r=="SAFE") reasons.push("خطر منخفض")
+if(r=="DANGER") reasons.push("تحذير عالي")
+
+return emoji[best]+" ← "+reasons.join(" | ")
+}
+
+/* ===== HIGHLIGHT ===== */
+
+function highlight(top5){
+
+foods.forEach(f=>{
+let b=document.getElementById("btn-"+f)
+b.classList.remove("best","good")
+
+if(f==top5[0]){
+b.classList.add("best")
+b.style.transform="scale(1.2)"
+}else{
+b.style.transform="scale(1)"
+}
+
+if(top5.includes(f) && f!=top5[0])
+b.classList.add("good")
+
+})
 }
 
 /* ===== UPDATE ===== */
@@ -163,8 +266,11 @@ history.slice(-20).map(x=>emoji[x]).join(" ")
 document.getElementById("absence").innerHTML=
 foods.map(f=>emoji[f]+"("+absence(f)+")").join(" | ")
 
-let state=wave()+" | "+(trap()?"TRAP":"OK")+" | "+(drift()?"DRIFT":"STABLE")
-document.getElementById("state").innerHTML=state
+document.getElementById("behavior").innerHTML=
+(trap()?"TRAP ":"")+(drift()?"DRIFT ":"STABLE")
+
+let r=risk()
+document.getElementById("risk").innerHTML=r
 
 let scores={}
 foods.forEach(f=>scores[f]=score(f))
@@ -175,9 +281,10 @@ let vegTop=sorted.filter(x=>veg.includes(x[0])).slice(0,3).map(x=>x[0])
 let meatTop=sorted.filter(x=>meat.includes(x[0])).slice(0,2).map(x=>x[0])
 
 let top5=[...vegTop,...meatTop]
-
 let meat3=sorted.filter(x=>meat.includes(x[0])).slice(0,3).map(x=>x[0])
 let top6=[vegTop[0],vegTop[1],vegTop[2],meat3[0],meat3[1],meat3[2]]
+
+highlight(top5)
 
 document.getElementById("top5").innerHTML=top5.map(x=>emoji[x]).join(" ")
 document.getElementById("top6").innerHTML=top6.map(x=>emoji[x]).join(" ")
@@ -190,24 +297,21 @@ let monte=monteCarlo()
 document.getElementById("monte").innerHTML=
 foods.map(f=>emoji[f]+" "+monte[f]+"%").join(" | ")
 
-let best=sorted[0]
-let second=sorted[1]
+let best=sorted[0][0]
+let conf=((sorted[0][1]-sorted[1][1])/sorted[0][1])*100
+conf=Math.max(conf,5)
 
-let conf=((best[1]-second[1])/best[1])*100
+lastConfidence=conf
+
 document.getElementById("confidence").innerHTML=conf.toFixed(1)+"%"
 
-let decision="WAIT"
-if(conf>25 && !trap()) decision="PLAY"
-if(trap()) decision="SKIP"
+let dec=smartDecision(conf,r)
+document.getElementById("decision").innerHTML=dec
 
-document.getElementById("decision").innerHTML=decision
+document.getElementById("opportunity").innerHTML=
+opportunity(conf,r)
 
-document.getElementById("explain").innerHTML=
-emoji[best[0]]+" بسبب: Absence "+absence(best[0])+" | Wave "+wave()+" | Mode "+mode
-
-if(bot && decision=="PLAY"){
-add(top5[0])
-}
+document.getElementById("explain").innerHTML=explain(best,r)
 
 }
 
