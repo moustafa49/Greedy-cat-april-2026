@@ -1,22 +1,23 @@
 <!DOCTYPE html><html>
 <head>
 <meta charset="UTF-8">
-<title>OMNISCIENT AI — PRO UI</title><style>
+<title>OMNISCIENT AI — PRO UPGRADE</title><style>
 
 body{
 background:#020617;
 color:white;
-text-align:center;
 font-family:Arial;
+text-align:center;
 padding:15px
 }
 
 h1{
+color:#22c55e;
 font-size:28px;
-margin-bottom:20px;
-color:#22c55e
+margin-bottom:20px
 }
 
+/* GRID */
 .grid{
 display:grid;
 grid-template-columns:repeat(4,1fr);
@@ -30,25 +31,40 @@ font-size:28px;
 background:#1e293b;
 color:white;
 border:none;
-border-radius:12px;
-font-weight:bold
+border-radius:12px
 }
 
 button:active{
 transform:scale(0.95)
 }
 
+/* CONTROLS */
 .controls{
 display:flex;
+flex-wrap:wrap;
 gap:10px;
 justify-content:center;
-flex-wrap:wrap;
 margin-bottom:15px
 }
 
-.info{
-font-size:18px;
-margin:6px 0
+/* SECTION */
+.section{
+margin-top:20px
+}
+
+.history{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+justify-content:center;
+margin-top:10px
+}
+
+.history span{
+font-size:20px;
+background:#1e293b;
+padding:6px 10px;
+border-radius:8px
 }
 
 .big{
@@ -56,11 +72,7 @@ font-size:22px;
 font-weight:bold
 }
 
-.active{
-background:#22c55e !important
-}
-
-</style></head><body><h1>OMNISCIENT AI 💀🔥</h1><div class="grid">
+</style></head><body><h1>OMNISCIENT AI 💀🔥</h1><!-- GRID --><div class="grid">
 <button id="🌽" onclick="add('🌽')">🌽</button>
 <button id="🍅" onclick="add('🍅')">🍅</button>
 <button id="🥕" onclick="add('🥕')">🥕</button>
@@ -69,19 +81,27 @@ background:#22c55e !important
 <button id="🦐" onclick="add('🦐')">🦐</button>
 <button id="🐄" onclick="add('🐄')">🐄</button>
 <button id="🐔" onclick="add('🐔')">🐔</button>
-</div><div class="controls">
+</div><!-- CONTROLS --><div class="controls">
 <button id="botBtn" onclick="toggleBot()">BOT: OFF</button>
-<button onclick="toggleAuto()">AUTO: OFF</button>
+<button id="autoBtn" onclick="toggleAuto()">AUTO: OFF</button>
 <button onclick="undo()">Undo</button>
 <button onclick="reset()">Reset</button>
 <button onclick="clearMemory()">Clear</button>
-</div><div class="info big">Mode: <span id="mode"></span></div>
-<div class="info">Trend: <span id="trend"></span></div>
-<div class="info big">Top5: <span id="top5"></span></div>
-<div class="info">Top6: <span id="top6"></span></div>
-<div class="info">Absence: <span id="absence"></span></div>
-<div class="info big">Confidence: <span id="confidence"></span></div>
-<div class="info">Accuracy: <span id="accuracy"></span></div><script>
+</div><!-- HISTORY --><div class="section">
+<b>History (Last 20)</b>
+<div id="historyBar" class="history"></div>
+</div><!-- ANALYSIS --><div class="section">
+<b>AI Analysis</b>
+<div>Mode: <span id="mode"></span></div>
+<div>Trend: <span id="trend"></span></div>
+<div>Absence: <span id="absence"></span></div>
+</div><!-- PREDICTION --><div class="section">
+<b>Prediction</b>
+<div class="big">Top5: <span id="top5"></span></div>
+<div>Top6: <span id="top6"></span></div>
+<div class="big">Confidence: <span id="confidence"></span></div>
+<div>Accuracy: <span id="accuracy"></span></div>
+</div><script>
 
 const foods=["🌽","🍅","🥕","🌶️","🐟","🦐","🐄","🐔"]
 const veg=["🌽","🍅","🥕","🌶️"]
@@ -90,6 +110,7 @@ const meat=["🐟","🦐","🐄","🐔"]
 let history=[]
 let weights={}
 let memory={}
+
 let bot=false
 let auto=false
 let autoInterval=null
@@ -100,13 +121,12 @@ let correct=0
 foods.forEach(f=>weights[f]=1)
 
 /* STORAGE */
-
 function save(){
-localStorage.setItem("OMNI_UI",JSON.stringify({history,weights,memory,total,correct}))
+localStorage.setItem("OMNI_V2",JSON.stringify({history,weights,memory,total,correct}))
 }
 
 function load(){
-let d=localStorage.getItem("OMNI_UI")
+let d=localStorage.getItem("OMNI_V2")
 if(d){
 let x=JSON.parse(d)
 history=x.history||[]
@@ -118,21 +138,20 @@ correct=x.correct||0
 }
 
 function clearMemory(){
-localStorage.removeItem("OMNI_UI")
+localStorage.removeItem("OMNI_V2")
 alert("Memory Cleared")
 }
 
 /* ADD */
-
 function add(f){
 
 if(window.last){
 total++
 if(window.last.includes(f)){
 correct++
-weights[f]+=0.5
+weights[f]+=0.4
 }else{
-window.last.forEach(p=>weights[p]-=0.07)
+window.last.forEach(p=>weights[p]-=0.05)
 }
 }
 
@@ -146,7 +165,6 @@ save()
 }
 
 /* UNDO */
-
 function undo(){
 history.pop()
 update()
@@ -154,99 +172,58 @@ save()
 }
 
 /* ABSENCE */
-
 function getAbsence(f){
-
-let lastIndex=history.lastIndexOf(f)
-let gap = lastIndex===-1 ? history.length : history.length - lastIndex
-
+let last=history.lastIndexOf(f)
+let gap = last==-1 ? history.length : history.length-last
 let last20=history.slice(-20)
-let miss = last20.filter(x=>x!==f).length
-
+let miss=last20.filter(x=>x!==f).length
 return {gap,miss}
 }
 
 /* TREND */
-
 function trend(){
 let last10=history.slice(-10)
 let v=last10.filter(x=>veg.includes(x)).length
 let m=last10.filter(x=>meat.includes(x)).length
-
 if(v>m+2)return "VEG 🌽"
 if(m>v+2)return "MEAT 🐟"
 return "MIX ⚖️"
 }
 
-/* DETECTORS */
-
-function trap(){
-let l=history.slice(-4)
-return l.length===4 && l.every(x=>x===l[0])
-}
-
-function fake(){
-let l=history.slice(-6)
-return new Set(l).size<=2
-}
-
-function drift(){
-let a=history.slice(-10)
-let b=history.slice(-20)
-
-return Math.abs(
-a.filter(x=>veg.includes(x)).length -
-b.filter(x=>veg.includes(x)).length
-)>4
-}
-
 /* SCORE */
-
 function score(f){
 
 let s=0
 
-let recent=history.slice(-30)
+let recent=history.slice(-25)
 s+=recent.filter(x=>x==f).length*2
 
 let abs=getAbsence(f)
-s+=abs.gap*0.6
+s+=abs.gap*0.5
 
 s+=weights[f]
 
-let last3=history.slice(-3).join("-")
-if(memory[last3]) s+=memory[last3]
+let seq=history.slice(-3).join("-")
+if(memory[seq]) s+=memory[seq]
 
-let last5=history.slice(-5)
-if(last5.filter(x=>x==f).length>=3) s-=6
+if(history.slice(-5).filter(x=>x==f).length>=3) s-=5
 
-if(trap() && history[history.length-1]!=f) s+=6
-
-if(fake()) s*=0.6
-if(drift()) s*=0.7
-
-s+=Math.random()*0.02
+s+=Math.random()*0.01
 
 return s
 }
 
 /* AI */
-
 function ai(){
-
 let s={}
 foods.forEach(f=>s[f]=score(f))
-
 let totalScore=Object.values(s).reduce((a,b)=>a+b,0)
-
 let prob={}
 foods.forEach(f=>prob[f]=(s[f]/totalScore)*100)
-
 return prob
 }
 
 /* BALANCE */
-
 function balance(sorted){
 
 let v=sorted.filter(x=>veg.includes(x[0]))
@@ -255,7 +232,6 @@ let m=sorted.filter(x=>meat.includes(x[0]))
 let t=trend()
 
 let vC=3,mC=2
-
 if(t.includes("VEG")){vC=2;mC=3}
 
 return {
@@ -265,50 +241,34 @@ top6:[...v.slice(0,3),...m.slice(0,3)].map(x=>x[0])
 }
 
 /* MODE */
-
 function mode(conf){
-
-if(fake()) return "SKIP ❌"
-if(trap()) return "ESCAPE ⚠️"
-if(drift()) return "WAIT ⏳"
-
-if(conf>25) return "PLAY 🔥"
-if(conf>12) return "RISK ⚠️"
-
+if(conf>25)return "PLAY 🔥"
+if(conf>12)return "RISK ⚠️"
 return "SKIP ❌"
 }
 
 /* BOT */
-
 function toggleBot(){
-
 bot=!bot
-
 let btn=document.getElementById("botBtn")
-
-if(bot){
-btn.innerText="BOT: ON 🤖"
-btn.style.background="#22c55e"
-}else{
-btn.innerText="BOT: OFF"
-btn.style.background="#1e293b"
-}
-
+btn.innerText=bot?"BOT: ON 🤖":"BOT: OFF"
+btn.style.background=bot?"#22c55e":"#1e293b"
 }
 
 /* AUTO */
-
 function toggleAuto(){
 
 auto=!auto
-let btn=event.target
+let btn=document.getElementById("autoBtn")
 
 if(auto){
 btn.innerText="AUTO: ON ⚡"
 btn.style.background="#22c55e"
 
 autoInterval=setInterval(()=>{
-autoPlay()
+if(window.last){
+add(window.last[0])
+}
 },2000)
 
 }else{
@@ -319,27 +279,17 @@ clearInterval(autoInterval)
 
 }
 
-function autoPlay(){
-
-let conf=parseFloat(document.getElementById("confidence").innerText)
-
-if(conf<15) return
-
-if(window.last){
-add(window.last[0])
-}
-
-}
-
 /* UPDATE */
-
 function update(){
+
+/* HISTORY */
+document.getElementById("historyBar").innerHTML=
+history.slice(-20).map(x=>"<span>"+x+"</span>").join("")
 
 let p=ai()
 let sorted=Object.entries(p).sort((a,b)=>b[1]-a[1])
 
 let b=balance(sorted)
-
 window.last=b.top5
 
 document.getElementById("top5").innerHTML=b.top5.join(" ")
@@ -360,8 +310,7 @@ return f+"("+a.gap+"|"+a.miss+")"
 let acc=total?((correct/total)*100).toFixed(1):0
 document.getElementById("accuracy").innerHTML=acc+"%"
 
-/* BOT Highlight */
-
+/* HIGHLIGHT */
 foods.forEach(f=>{
 let el=document.getElementById(f)
 el.style.background="#1e293b"
